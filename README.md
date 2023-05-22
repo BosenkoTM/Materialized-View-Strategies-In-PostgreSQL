@@ -105,7 +105,36 @@ select * from account_balances where balance < 0;
 
 Чтобы сохранить их пространство имен, создадим отдельные схемы для каждого подхода.
 
+```sql
+create schema matview;
+create schema eager;
+create schema lazy;
+```
 
+## Материализованные представления PostgreSQL
+
+Простейший способ повысить производительность — использовать `материализованное представление`. 	
+
+**Материализованное представление** — это снимок запроса, сохраненный в таблице.
+
+```sql
+create materialized view matview.account_balances as
+select
+  name,
+  coalesce(
+    sum(amount) filter (where post_time <= current_timestamp),
+    0
+  ) as balance
+from accounts
+  left join transactions using(name)
+group by name;
+```
+Поскольку `материализованное представление` на самом деле представляет собой таблицу, можем создавать индексы.
+
+```sql
+create index on matview.account_balances (name);
+create index on matview.account_balances (balance);
+```
 
 
 

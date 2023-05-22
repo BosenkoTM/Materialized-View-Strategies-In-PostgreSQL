@@ -1,1 +1,1 @@
-# Materialized-View-Strategies-In-PostgreSQL
+# Стратегии материализованного представления в PostgreSQL

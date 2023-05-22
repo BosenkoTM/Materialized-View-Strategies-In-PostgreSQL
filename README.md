@@ -182,6 +182,52 @@ create index on eager.account_balances (balance);
 
 ### Создана новая учетная запись.
 
+При вставке учетной записи нам необходимо создать запись `account_balances` с нулевым балансом для новой учетной записи.
+
+```sql
+create function eager.account_insert() returns trigger
+	security definer
+	language plpgsql
+as $$
+	begin
+		insert into eager.account_balances(name) values(new.name);
+		return new;
+	end;
+$$;
+
+create trigger account_insert after insert on accounts
+	for each row execute procedure eager.account_insert();
+```
+
+
+### Учетная запись обновлена или удалена.
+
+Обновление и удаление учетной записи будут обрабатываться автоматически, поскольку внешний ключ учетной записи объявляется как при каскадном обновлении при каскадном удалении.
+
+###Транзакция вставлена, обновлена или удалена.
+
+Вставка, обновление и удаление транзакций имеют одну общую черту: они делают недействительным баланс счета. Поэтому первым шагом является определение функции обновления баланса учетной записи.
+```sql
+create function eager.refresh_account_balance(_name varchar)
+	returns void
+	security definer
+	language sql
+as $$
+	update eager.account_balances
+	set balance=
+		(
+			select sum(amount)
+			from transactions
+			where account_balances.name=transactions.name
+			and post_time <= current_timestamp
+		)
+	where name=_name;
+$$;
+```
+Далее создать **триггер-функцию**, которая вызывает `refresh_account_balance` всякий раз, когда вставляется транзакция.
+
+
+
 
 
 

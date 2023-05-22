@@ -50,12 +50,60 @@ IS_TEMPLATE = False;
 
 ```sql
 psql -f accounts.sql pg_cache_demo
-psql -f transactions.sql pg_cache_demo
-psql -f postgresql_view.sql pg_cache_demo
-psql -f postgresql_mat_view.sql pg_cache_demo
-psql -f eager_mat_view.sql pg_cache_demo
-psql -f lazy_mat_view.sql pg_cache_demo
 ```
+3. Выполним обновление строк
+
+```sql
+psql -f transactions.sql pg_cache_demo
+```
+или
+
+```sql
+with r as (
+  select (random() * 29999)::bigint as account_offset
+  from generate_series(1, 1500000)
+)
+insert into transactions(name, amount, post_time)
+select
+  (select name from accounts offset account_offset limit 1),
+  ((random()-0.5)*1000)::numeric(8,2),
+  current_timestamp + '90 days'::interval - (random()*1000 || ' days')::interval
+from r
+;
+```
+
+4. Наш запрос, для которого будем оптимизировать, — это поиск баланса счетов. 
+
+Для начала создадим представление, которое находит балансы для всех счетов. 
+
+Представление PostgreSQL — это сохраненный запрос. 
+
+После создания выбор из представления точно такой же, как и выбор из исходного запроса, т. е. каждый раз выполняется повторный запрос.
+
+```sql
+create view account_balances as
+select
+	name,
+	coalesce(
+		sum(amount) filter (where post_time <= current_timestamp),
+		0
+	) as balance
+from accounts
+	left join transactions using(name)
+group by name;
+```
+
+5.Теперь просто выбираем все строки с отрицательным балансом.
+
+```sql
+select * from account_balances where balance < 0;
+```
+
+После нескольких запусков формирования кэша, этот запрос занимает примерно `3000-4000` мс. 
+	
+Изучим несколько решений по оптимизации транзакционных действий. 
+
+Чтобы сохранить их пространство имен, создадим отдельные схемы для каждого подхода.
 
 
 

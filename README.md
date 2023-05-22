@@ -49,12 +49,12 @@ IS_TEMPLATE = False;
 2. Загрузить тестовые данные. Для этого примера создадим `30 000` учетных записей, в среднем по `50` транзакций в каждой.
 
 ```sql
-psql -f `accounts.sql` pg_cache_demo
-psql -f `transactions.sql` pg_cache_demo
-psql -f `postgresql_view.sql` pg_cache_demo
-psql -f `postgresql_mat_view.sql` pg_cache_demo
-psql -f `eager_mat_view.sql1 pg_cache_demo
-psql -f `lazy_mat_view.sql` pg_cache_demo
+psql -f accounts.sql pg_cache_demo
+psql -f transactions.sql pg_cache_demo
+psql -f postgresql_view.sql pg_cache_demo
+psql -f postgresql_mat_view.sql pg_cache_demo
+psql -f eager_mat_view.sql pg_cache_demo
+psql -f lazy_mat_view.sql pg_cache_demo
 ```
 
 
